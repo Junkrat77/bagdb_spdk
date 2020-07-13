@@ -24,16 +24,16 @@ static const char *_g_kvs_getopt_string = "K:fD:E";
 static struct option _g_app_long_cmdline_options[] = {
 #define MAX_KEY_LENGH_OPT_IDX   'K'
     {"max-key-length",optional_argument,NULL,MAX_KEY_LENGH_OPT_IDX},
-// #define SHARDS_OPT_IDX          'S'
-//     {"shards",optional_argument,NULL,SHARDS_OPT_IDX},
-// #define CHUNKS_PER_NODE_OPD_IDX 'C'
-//     {"chunks-per-node",optional_argument,NULL,CHUNKS_PER_NODE_OPD_IDX},
+#define SHARDS_OPT_IDX          'S'
+    {"shards",optional_argument,NULL,SHARDS_OPT_IDX},
+#define CHUNKS_PER_NODE_OPD_IDX 'C'
+    {"chunks-per-node",optional_argument,NULL,CHUNKS_PER_NODE_OPD_IDX},
 #define FORCE_FORMAT_OPT_IDX    'f'
     {"force-format",optional_argument,NULL,FORCE_FORMAT_OPT_IDX},
 #define DEVNAME_OPT_IDX         'D'
     {"devname",required_argument,NULL,DEVNAME_OPT_IDX},
-// #define INIT_NODES_IDX          'N'
-//     {"init-nodes",optional_argument,NULL,INIT_NODES_IDX},
+#define INIT_NODES_IDX          'N'
+    {"init-nodes",optional_argument,NULL,INIT_NODES_IDX},
 #define DUMP_OPT_IDX            'E'
     {"dump",optional_argument,NULL,DUMP_OPT_IDX}
 };
@@ -43,7 +43,7 @@ struct kvs_create_opts{
     char* devname;
     uint32_t nb_shards;
     uint32_t max_key_length;
-    // uint32_t nb_chunks_per_reclaim_node;
+    uint32_t nb_chunks_per_reclaim_node;
     uint32_t nb_init_nodes_per_slab;// node的解释？
     bool force_format;
     bool dump_only;
@@ -64,14 +64,14 @@ struct kvs_format_ctx {
     spdk_blob_id super_blob_id;
 	struct spdk_blob *super_blob;
     uint64_t io_unit_size;
-    //uint32_t nb_init_nodes_per_slab;
+    uint32_t nb_init_nodes_per_slab;
     int rc;
     struct spdk_io_channel *channel;
     char *devname;
     uint32_t super_size;
     struct super_layout *sl;
-    //uint32_t *slab_size_array;
-    //uint32_t nb_slabs;
+    uint32_t *slab_size_array;
+    uint32_t nb_slabs;
 }
 
 struct _blob_iter {
@@ -745,29 +745,29 @@ _kvs_parse_arg(int ch, char *arg){
             }
             break;
         }
-        // case 'S':{
-        //     long shards  = spdk_strtol(arg,0);
-        //     if( (shards>0) && ( (shards&(shards-1))==0 ) ){
-        //         _g_default_opts.nb_shards = shards;
-        //     }
-        //     else{
-        //         fprintf(stderr,"The shards shall be a positive number and be 2 to the power of n \n");
-        //         return -EINVAL;
-        //     }
-        //     break;
-        // }
+        case 'S':{
+            long shards  = spdk_strtol(arg,0);
+            if( (shards>0) && ( (shards&(shards-1))==0 ) ){
+                _g_default_opts.nb_shards = shards;
+            }
+            else{
+                fprintf(stderr,"The shards shall be a positive number and be 2 to the power of n \n");
+                return -EINVAL;
+            }
+            break;
+        }
 
-        // case 'C':{
-        //     long chunks = spdk_strtol(arg,0);
-        //     if(chunks>0){
-        //         _g_default_opts.nb_chunks_per_reclaim_node = chunks;
-        //     }
-        //     else{
-        //         fprintf(stderr,"The shards shall be a positive number\n");
-        //         return -EINVAL;
-        //     }
-        //     break;
-        // }
+        case 'C':{
+            long chunks = spdk_strtol(arg,0);
+            if(chunks>0){
+                _g_default_opts.nb_chunks_per_reclaim_node = chunks;
+            }
+            else{
+                fprintf(stderr,"The shards shall be a positive number\n");
+                return -EINVAL;
+            }
+            break;
+        }
         case 'f':
             _g_default_opts.force_format = true;
             break;
@@ -777,17 +777,17 @@ _kvs_parse_arg(int ch, char *arg){
         case 'E':
             _g_default_opts.dump_only = true;
             break;
-        // case 'N':{
-        //     long nodes = spdk_strtol(arg,0);
-        //     if(nodes>0){
-        //         _g_default_opts.nb_init_nodes_per_slab=nodes;
-        //     }
-        //     else{
-        //         fprintf(stderr,"The init nodes shall be a positive number\n");
-        //         return -EINVAL;
-        //     }
-        //     break;
-        // }
+        case 'N':{
+            long nodes = spdk_strtol(arg,0);
+            if(nodes>0){
+                _g_default_opts.nb_init_nodes_per_slab=nodes;
+            }
+            else{
+                fprintf(stderr,"The init nodes shall be a positive number\n");
+                return -EINVAL;
+            }
+            break;
+        }
         default:
             return -EINVAL;
             break;
@@ -799,15 +799,15 @@ static void
 _kvs_usage(void){
 	printf(" -K, --max-key-length <num>   the max key length of the current kvs(default:%u)\n",
                                           _g_default_opts.max_key_length);
-	// printf(" -S, --shards <num>           the number of shards(default:%u)\n", // 分片数
-    //                                       _g_default_opts.nb_shards);
-    // printf(" -C, --chunks-per-node <num>  the chunks per reclaim node(default:%u)\n",// 每个回收节点的块数
-    //                                       _g_default_opts.nb_chunks_per_reclaim_node);
+	printf(" -S, --shards <num>           the number of shards(default:%u)\n", // 分片数
+                                          _g_default_opts.nb_shards);
+    printf(" -C, --chunks-per-node <num>  the chunks per reclaim node(default:%u)\n",// 每个回收节点的块数
+                                          _g_default_opts.nb_chunks_per_reclaim_node);
     printf(" -f, --force-format           format the kvs forcely\n");
     printf(" -D, --devname <namestr>      the devname(default:%s)\n",
                                           _g_default_opts.devname);
-    // printf(" -N, --init-nodes  <num>      the init nodes for each slab(default:%u)\n",
-    //                                       _g_default_opts.nb_init_nodes_per_slab);
+    printf(" -N, --init-nodes  <num>      the init nodes for each slab(default:%u)\n",
+                                          _g_default_opts.nb_init_nodes_per_slab);
     printf(" -E, --dump                   Dump the existing kvs format\n");
 }
 
