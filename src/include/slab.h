@@ -16,9 +16,26 @@ struct slab_layout {
     uint64_t resv;// blob addr
 }
 
+
+struct slab {
+    uint32_t slab_size;
+    struct spdk_blob *blob;
+    uint32_t flag;
+    //struct slab_reclaim reclaim;
+    TAILQ_HEAD(,resize_ctx) resize_head;
+};
+
+
+// 
+struct slab_shard{
+    uint32_t nb_slabs;
+    struct slab* slab_set;
+};
+
+
 #define DEFAULT_KVS_PIN 0x1022199405121993u
 
-void slab_get_slab_conf(uint32_t **slab_size_array, uint32_t *nb_slabs, uint32_t *chunk_pages)
+void slab_get_slab_conf(uint32_t **slab_size_array, uint32_t *nb_slabs, uint32_t *chunk_pages);
 
 struct super_layout{
     //If the kvs_pin is not equal to DEFAULT_KVS_PIN, it will be a invalid.
